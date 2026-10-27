@@ -1,7 +1,8 @@
 import "server-only"
 import Anthropic from "@anthropic-ai/sdk"
 
-import { executeTool, STUDIO_TOOLS, TOOL_LABELS } from "@/lib/claude-tools"
+import { getBrand, todayIn } from "@/lib/brand"
+import { executeTool, STUDIO_TOOLS, TOOL_LABELS, type ToolEvent } from "@/lib/claude-tools"
 import { getSetting } from "@/lib/db"
 import { skillBody, type StudioSkillId } from "@/lib/skills"
 
@@ -17,6 +18,7 @@ export type ChatMessage = { role: "user" | "assistant"; content: string }
 export type StudioEvent =
   | { t: "text"; d: string }
   | { t: "tool"; name: string; label: string; state: "start" | "done" | "error" }
+  | ToolEvent
   | { t: "done"; model: string; inputTokens: number; outputTokens: number; costUsd: number }
   | { t: "error"; message: string }
 
@@ -30,7 +32,9 @@ const PREAMBLE = `You are the writing engine inside IG Studio, a private web app
 - The user's voice profile (voice.md) is below, if they have saved one. Saved files such as swipe.md are not available here, so do not say you read them.
 - You cannot browse Instagram, scrape it, or post anything. Finish with copy-ready text and the user posts it.
 - Never invent a number, client, result or story. Use {{your number}} where the skill says to, and flag it.
-- You cannot make image or video files. For visual work, describe each frame or slide precisely enough to build.
+- You cannot make video files. For video, describe each shot, the on-screen text and the timing.
+- You can draw images with design_slides: carousel slides, Story frames, and Reel covers or on-screen text cards. The app draws them in the user's brand colours and fonts, so never describe colours or fonts. Call it with the approved copy (format post_portrait for carousels, story for Stories and Reel covers). Use cover first, statement, list or quote in the middle, and cta last; keep titles short and body text under 25 words. Put the caption in "caption" and the cover's alt text in "alt". If the user already asked for images, call it right after the copy; otherwise finish by offering to make the images. After it returns, mention any warnings. The user edits and downloads the slides from a card under your reply.
+- When the user asks to put posts on the calendar, or agrees to your offer, call add_to_calendar with real dates (today's date is at the end of this prompt). Never add to the calendar unprompted.
 - Answer in Markdown. Put anything the user will copy into a fenced code block. Do not narrate tool calls.`
 
 export function buildSystem(skill: StudioSkillId) {
@@ -39,6 +43,12 @@ export function buildSystem(skill: StudioSkillId) {
     ? `## The user's voice profile (voice.md)\n\n${voice}`
     : `## The user's voice profile (voice.md)\n\nNone saved yet. Ask for three of their own reels or captions before writing anything long, or write in a neutral voice and say so.`
   return `${PREAMBLE}\n\n# Skill: ${skill}\n\n${skillBody(skill)}\n\n${voiceBlock}`
+}
+
+// Kept out of the cached block: it changes every day.
+function todayBlock() {
+  const tz = getBrand().timezone
+  return `Today is ${todayIn(tz)} (${tz}).`
 }
 
 function cost(model: ModelId, input: number, output: number, cacheRead: number, cacheWrite: number) {
@@ -78,7 +88,10 @@ export async function* runStudio(opts: {
       {
         model: opts.model,
         max_tokens: MAX_TOKENS,
-        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+        system: [
+          { type: "text", text: system, cache_control: { type: "ephemeral" } },
+          { type: "text", text: todayBlock() },
+        ],
         tools,
         messages,
         output_config: { effort: "medium" },
@@ -162,6 +175,7 @@ export async function* runStudio(opts: {
       yield { t: "tool", name: use.name, label, state: "start" }
       const out = await executeTool(use.name, use.input)
       yield { t: "tool", name: use.name, label, state: out.isError ? "error" : "done" }
+      if (out.event) yield out.event
       results.push({ type: "tool_result", tool_use_id: use.id, content: out.content, ...(out.isError ? { is_error: true } : {}) })
     }
     messages.push({ role: "user", content: results })

@@ -4,8 +4,13 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { requireSession } from "@/lib/auth"
-import { addDraft, deleteDraft, setSetting } from "@/lib/db"
+import { saveBrand } from "@/lib/brand"
+import { brandSchema, type Brand } from "@/lib/brand-shared"
+import { addDraft, addPost, deleteDraft, deletePost, deleteVisual, getVisual, updatePost, updateVisual } from "@/lib/db"
+import { setSetting } from "@/lib/db"
+import { postSchema, type PostFields } from "@/lib/posts-shared"
 import { isStudioSkill } from "@/lib/skills"
+import { specSchema, type SlideSpec } from "@/lib/slides"
 import type { ActionResult } from "@/lib/tool-types"
 
 async function guarded<T>(fn: () => T | Promise<T>): Promise<ActionResult<T>> {
@@ -46,5 +51,48 @@ export async function removeDraft(id: number) {
   return guarded(() => {
     deleteDraft(z.number().int().positive().parse(id))
     revalidatePath("/library")
+  })
+}
+
+export async function saveBrandAction(brand: Brand) {
+  return guarded(() => {
+    saveBrand(brandSchema.parse(brand))
+    revalidatePath("/brand")
+    revalidatePath("/calendar")
+  })
+}
+
+export async function saveVisualAction(id: number, spec: SlideSpec) {
+  return guarded(() => {
+    const parsed = specSchema.parse(spec)
+    if (!getVisual(id)) throw new Error("That slide set no longer exists.")
+    updateVisual(id, parsed.title, parsed.format, JSON.stringify(parsed))
+    revalidatePath(`/visuals/${id}`)
+    revalidatePath("/library")
+  })
+}
+
+export async function removeVisual(id: number) {
+  return guarded(() => {
+    deleteVisual(z.number().int().positive().parse(id))
+    revalidatePath("/library")
+    revalidatePath("/calendar")
+  })
+}
+
+export async function savePost(id: number | null, fields: PostFields) {
+  return guarded(() => {
+    const post = postSchema.parse(fields)
+    if (post.visual_id && !getVisual(post.visual_id)) throw new Error("That slide set no longer exists.")
+    const saved = id ? (updatePost(z.number().int().positive().parse(id), post), id) : addPost(post)
+    revalidatePath("/calendar")
+    return saved
+  })
+}
+
+export async function removePost(id: number) {
+  return guarded(() => {
+    deletePost(z.number().int().positive().parse(id))
+    revalidatePath("/calendar")
   })
 }
