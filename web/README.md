@@ -19,14 +19,33 @@ Needs `python3` on your PATH.
 
 ## Deploy on Coolify (ig.vidu.click)
 
-1. **DNS:** add an `A` record for `ig` on `vidu.click` pointing at your Coolify server.
-2. **Coolify:** New Resource → your GitHub repo `vidyuths/instagram-agent-skill`, branch `main`.
-   - Build pack: **Dockerfile**, location `/Dockerfile`, base directory `/`.
-   - Port: **3000**.
-   - Domain: `https://ig.vidu.click` (Coolify issues the certificate).
-3. **Environment variables:**
+The image is built by GitHub Actions (`.github/workflows/docker.yml`) on every
+merge to `main` that touches the app, and published to
+`ghcr.io/vidyuths/instagram-agent-skill`. Coolify only pulls and runs it, so the
+server never has to build Next.js.
+
+1. **DNS:** an `A` record for `ig` on `vidu.click` pointing at your Coolify server.
+2. **Image visibility:** after the first workflow run, open the package on
+   GitHub (your profile → Packages → instagram-agent-skill → Package settings)
+   and set it to **Public**, or give Coolify registry credentials instead.
+3. **Coolify:** New Resource → **Docker Image** →
+   `ghcr.io/vidyuths/instagram-agent-skill:latest`.
+   - Port: **3000**. Domain: `https://ig.vidu.click`.
+   - Health check path: `/healthz`.
+4. **Environment variables:**
    - `APP_PASSWORD`: your login password.
    - `SESSION_SECRET`: `openssl rand -base64 48`.
-4. Deploy. `/healthz` is the health check path.
+5. Deploy.
+
+### Redeploy automatically (optional)
+
+Add two repository secrets on GitHub (Settings → Secrets and variables →
+Actions) and the workflow tells Coolify to redeploy after each new image:
+
+- `COOLIFY_DEPLOY_URL`: `https://coolify.vidu.click/api/v1/deploy?uuid=<app uuid>&force=false`
+  (the app's UUID is in its Coolify URL).
+- `COOLIFY_TOKEN`: a Coolify API token with deploy permission.
+
+Without them, press **Redeploy** in Coolify after a new image is published.
 
 Changing `SESSION_SECRET` signs everyone out.
