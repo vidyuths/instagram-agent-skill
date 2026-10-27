@@ -27,9 +27,11 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     SKILLS_DIR=/app/skills \
+    FONTS_DIR=/app/assets/fonts \
     DATA_DIR=/data
 COPY skills ./skills
 COPY templates ./templates
+COPY web/assets ./assets
 COPY --from=build /app/web/.next/standalone ./
 COPY --from=build /app/web/.next/static ./.next/static
 USER app

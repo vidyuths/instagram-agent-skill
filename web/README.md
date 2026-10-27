@@ -8,10 +8,22 @@ Python tools run on the server exactly as they do from the command line.
   Claude can call the same Python tools as the Tools page (hook scorer, beat
   sheet, caption check, humanizer) and report their real numbers. Replies
   stream; save the good ones to the Library.
+- **Slides:** Claude calls `design_slides` and the app draws carousel slides,
+  Story frames and Reel covers as PNGs (1080x1350, 1080x1440, 1080x1080 or
+  1080x1920) in your brand colours, with a preview, a text editor, per-slide PNG
+  and a zip. satori draws the layout, sharp makes the PNG, and the fonts
+  (Fraunces and DM Sans, SIL OFL) are in `assets/fonts`.
+- **Brand:** your palette, ink and handle. Text colour is picked per background
+  by WCAG contrast, and the page shows each ratio. Olive `#929272` takes dark
+  text because white on it is only 3.2:1.
+- **Calendar:** a month view of planned posts (format, status, date, caption,
+  notes, linked slides). Add posts from a Studio reply, from a slide set, or let
+  Claude call `add_to_calendar` when you ask it to plan your week.
 - **Tools:** the instant checks on their own. No AI, no cost.
-- **Library / Voice:** saved drafts and your voice profile, in SQLite.
+- **Library / Voice:** saved drafts, slide sets and your voice profile, in SQLite.
 
-Not here yet: ig-viral (needs live browsing) and image/video generation.
+Not here yet: ig-viral (needs live browsing), video, sending to Canva, and
+posting to Instagram. The app never posts anything.
 
 ## Run locally
 

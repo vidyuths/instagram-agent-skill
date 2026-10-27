@@ -10,8 +10,10 @@ import { cn } from "@/lib/utils"
 
 const LINKS = [
   { href: "/", label: "Studio" },
-  { href: "/tools", label: "Tools" },
+  { href: "/calendar", label: "Calendar" },
   { href: "/library", label: "Library" },
+  { href: "/tools", label: "Tools" },
+  { href: "/brand", label: "Brand" },
   { href: "/voice", label: "Voice" },
 ]
 
@@ -23,7 +25,7 @@ export function AppNav() {
       <div className="order-last w-full overflow-x-auto sm:order-none sm:w-auto sm:flex-1 sm:overflow-visible sm:pl-2">
         <nav aria-label="Main" className="flex items-center gap-1">
           {LINKS.map((l) => {
-            const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href)
+            const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href) || (l.href === "/library" && pathname.startsWith("/visuals"))
             return (
               <Link
                 key={l.href}

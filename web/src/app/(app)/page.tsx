@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { getBrand, todayIn } from "@/lib/brand"
 import { getSetting } from "@/lib/db"
 import { STUDIO_SKILLS } from "@/lib/skills"
 import { DEFAULT_MODEL, MODELS } from "@/lib/studio"
@@ -30,6 +31,7 @@ export default function StudioPage() {
         skills={STUDIO_SKILLS.map((s) => ({ id: s.id, label: s.label, hint: s.hint }))}
         models={Object.entries(MODELS).map(([id, m]) => ({ id, label: m.label, note: m.note }))}
         defaultModel={DEFAULT_MODEL}
+        today={todayIn(getBrand().timezone)}
       />
     </div>
   )
