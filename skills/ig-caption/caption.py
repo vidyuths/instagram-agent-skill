@@ -7,7 +7,7 @@ Instagram gives a caption about 125 characters in the feed and hides the rest
 behind a tap. Almost every caption that fails, fails there: the hook is in
 sentence three, or the first line is a greeting, or the whole thing opens on a
 hashtag. This prints the visible window as a box so you can read it the way a
-scrolling stranger does, then checks the eight things that are worth checking.
+scrolling stranger does, then checks the nine things that are worth checking.
 
 The 125-character cut is an approximation. The real number moves with the
 device, the font size and where your line breaks fall, which is exactly why
@@ -26,6 +26,7 @@ import json
 import re
 import sys
 import textwrap
+import unicodedata
 
 LIMIT = 2200             # Instagram's hard caption limit.
 TRUNCATE = 125           # Roughly where the feed cuts to "... more".
@@ -52,6 +53,17 @@ ASKS = [
     (re.compile(r"(?i)\b(?:swipe|tap) (?:through|left|right|for|to)\b"), "swipe or tap"),
     (re.compile(r"(?i)\btell me\b|\bwhat would you\b|\bwhich one\b"), "answer a question"),
 ]
+
+# Format characters (zero-width spaces, joiners, BOMs, tag characters) and
+# no-break spaces. Your keyboard does not type these; generated text does.
+# U+200D is left out because it holds multi-person and skin-tone emoji together.
+HARD_SPACES = {"\u00a0", "\u202f"}
+
+
+def invisible_chars(text):
+    return [c for c in text
+            if (unicodedata.category(c) == "Cf" and c != "\u200d") or c in HARD_SPACES]
+
 
 FILLER_TAGS = {"#viral", "#fyp", "#explore", "#explorepage", "#foryou", "#foryoupage",
                "#trending", "#instagood", "#love", "#follow", "#like4like", "#reels",
@@ -148,6 +160,15 @@ def analyse(text, cut=TRUNCATE, keywords=None):
     else:
         add("ONE ASK", "WARN", f"{len(asks)} asks ({', '.join(asks)}). "
                                "Two asks is the same as none")
+
+    hidden = invisible_chars(stripped)
+    if hidden:
+        names = sorted({f"U+{ord(c):04X}" for c in hidden})
+        add("INVISIBLE", "WARN",
+            f"{len(hidden)} invisible character(s) ({', '.join(names[:4])}). "
+            "Run ig-human/humanize.py on it before posting")
+    else:
+        add("INVISIBLE", "PASS", "no hidden characters")
 
     density = len(emoji) * 100 / max(chars, 1)
     add("EMOJI", "WARN" if density > 4 else "PASS",

@@ -148,6 +148,9 @@ def pass_lexical(text, lex):
     text = re.sub(r"(?m)^[ \t]*(?:[,.;:]+[ \t]*)+", "", text)
     text = re.sub(r"(?m)^[ \t](?=\S)", "", text)       # one space left by a deletion.
                                                       # Deeper indents are deliberate.
+    # A deleted sentence can leave its own end mark behind the previous one
+    # ("strategy. Stop scrolling!" became "strategy. !"). Keep the first.
+    text = re.sub(r"([.!?])[ \t]+[.!?]+(?=\s|$)", r"\1", text)
     text = re.sub(r"\s+([,.;:!?])", r"\1", text)
     text = re.sub(r",\s*([,.;:!?])", r"\1", text)      # an em dash became a comma,
                                                       # then the clause after it went
