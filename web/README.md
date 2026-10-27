@@ -3,8 +3,15 @@
 A private web front end for the skills in `../skills`. One login, and the
 Python tools run on the server exactly as they do from the command line.
 
-Phase 1 (this): instant tools — hook scoring, beat sheets, caption check,
-humanizer. No AI calls, no API cost.
+- **Studio:** the skills in `../skills` as a chat, written by Claude. Each
+  skill's `SKILL.md` is the system prompt, your voice profile is added, and
+  Claude can call the same Python tools as the Tools page (hook scorer, beat
+  sheet, caption check, humanizer) and report their real numbers. Replies
+  stream; save the good ones to the Library.
+- **Tools:** the instant checks on their own. No AI, no cost.
+- **Library / Voice:** saved drafts and your voice profile, in SQLite.
+
+Not here yet: ig-viral (needs live browsing) and image/video generation.
 
 ## Run locally
 
@@ -35,7 +42,10 @@ server never has to build Next.js.
 4. **Environment variables:**
    - `APP_PASSWORD`: your login password.
    - `SESSION_SECRET`: `openssl rand -base64 48`.
-5. Deploy.
+   - `ANTHROPIC_API_KEY`: for the Studio. Leave "Build Variable" off.
+5. **Storage:** add a persistent volume mounted at `/data`. The voice profile
+   and saved drafts live there; without it they are lost on every redeploy.
+6. Deploy.
 
 ### Redeploy automatically (optional)
 
