@@ -19,14 +19,17 @@ COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
  && rm -rf /var/lib/apt/lists/* \
- && useradd --create-home --uid 1001 app
+ && useradd --create-home --uid 1001 app \
+ && mkdir /data && chown app:app /data
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
-    SKILLS_DIR=/app/skills
+    SKILLS_DIR=/app/skills \
+    DATA_DIR=/data
 COPY skills ./skills
+COPY templates ./templates
 COPY --from=build /app/web/.next/standalone ./
 COPY --from=build /app/web/.next/static ./.next/static
 USER app
