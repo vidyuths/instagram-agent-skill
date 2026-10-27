@@ -15,7 +15,11 @@ FROM python:3.13-slim-bookworm
 # The tools are standard-library Python; the standalone Next.js server only
 # needs the node binary, so copy it in rather than installing from apt.
 COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
-RUN useradd --create-home --uid 1001 app
+# curl is for Coolify's health check, which runs curl or wget inside the container.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --create-home --uid 1001 app
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
@@ -28,5 +32,5 @@ COPY --from=build /app/web/.next/static ./.next/static
 USER app
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
-  CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD curl -fsS http://127.0.0.1:3000/healthz || exit 1
 CMD ["node", "server.js"]
